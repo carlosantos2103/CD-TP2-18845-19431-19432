@@ -1,4 +1,1 @@
-channel: 12 
-channel: 212 
--> user: miguel 
-channel: 1 
+[{"channel_id": 1, "name": "", "users": ["miguel"]}, {"channel_id": 2, "name": "rita", "users": ["ricardo"]}]

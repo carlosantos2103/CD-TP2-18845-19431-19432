@@ -1,13 +1,14 @@
 import six
+import json
 from flask import Flask, jsonify, abort, request, make_response, url_for
 from flask_httpauth import HTTPBasicAuth
+from flask_cors import CORS
 
 app = Flask(__name__, static_url_path="")
+CORS(app)
 auth = HTTPBasicAuth()
 
-
-# TODO: ver aqui as excecoes https://werkzeug.palletsprojects.com/en/1.0.x/exceptions/
-# TODO: Fazer o login?
+# TODO: Fazer o login
 
 @auth.get_password
 def get_password(username):
@@ -35,20 +36,13 @@ login = [
         'username': 'ricardo',
         'password': '18845'
     },
-    {
-        'username': 'miguel',
-        'password': '12345'
-    }
 ]
 
 channels = [
     {
         'channel_id': 1,
+        'name': '',
         'users': ['miguel'],
-    },
-    {
-        'channel_id': 12,
-        'users': ['ricardo'],
     },
 ]
 
@@ -59,28 +53,25 @@ messages = [
         'username': '',
         'send': [],
     },
-    {
-        'channel':  12,
-        'sms': '',
-        'username': '',
-        'send': [],
-    },
 ]
 
-def write_channel_files(filename, data):
+def write_file(filename, data):
     with open(filename, 'w') as file:
         file.truncate(0)
-        for f in data:
-            file.write(f'''channel: {f['channel_id']} \n''')
-            for user in f['users']:
-                file.write(f'''-> user: {user} \n''')
+        json.dump(data, file)
         file.close()
 
-def read_channel_files(filename):
-    with open(filename, 'w') as file:
-        content = file.read()
-        file.close()
-        return content
+def read_file(filename):
+    try:
+        with open(filename, 'r') as file:
+            try:
+                content = json.load(file)
+            except ValueError:
+                return []
+    except IOError as e:
+        return []
+    file.close()
+    return content
 
 # Mostra as mensagens que o canal possui
 @app.route('/see_messages/<int:channel_id>',  methods=['GET'])
@@ -117,53 +108,50 @@ def see_messages(channel_id):
                 return jsonify(messages), 201
     abort(404)
 
-# Registar num canal um utilizador
+# Registar num canal
 @app.route('/create_register', methods=['POST'])
-@auth.login_required
 def create_register():
-    if not request.json or 'channel' and 'username' not in request.json:
+    if not request.json or 'name' and 'username' not in request.json:
         abort(400)
-
-    # Verifica se existe o canal
-    channel = [channel for channel in channels if channel['channel_id'] == int(request.json['channel'])]
-    # Caso nao exista faz um canal novo
-    if len(channel) == 0:
-        new_channel1 = {
-            'channel_id': int(request.json['channel']),
-            'users': [str(request.json['username'])],
-        }
-        channels.append(new_channel1)
-        # Escreve os a estrutura de dados num ficheiro
-        write_channel_files('channels_data', channels)
-        return jsonify(channels), 201
-
-    # Caso ja exista adiciona o utilizador a lista de utilizadores do canal
-    for cha in channel:
-        for user in cha['users']:
-            # Verifica se existe esse utilizador
-            if user == str(request.json['username']):
-                abort(404)
-
-    new_canal = {
-    'channel_id': int(request.json['channel']),
-    'users': cha['users'],
+    new_channel = {
+        'channel_id': len(channels) + 1,
+        'name': str(request.json['name']),
+        'users': [ str(request.json['username']) ],
     }
-    new_canal['users'].append(request.json['username'])
-
-    delete_channel(channels, int(request.json['channel']))
-    channels.append(new_canal)
+    # Adiciona outro canal aos ja existentes
+    channels.append(new_channel)
     # Escreve os a estrutura de dados num ficheiro
-    write_channel_files('channels_data', channels)
+    write_file('channels_data', channels)
     return jsonify(channels), 201
 
-# Funcao auxliar para apagar o canal TODO: tentar substiuir por uma funcao imperativa -> channel = [channel for channel in channels if channel['channel_id'] == int(request.json['channel'])]
-def delete_channel(canal, id):
-    for channel in canal:
-        if channel['channel_id'] == int(id):
-            canal.remove(channel)
+
+# Inserir um utilizador num canal
+@app.route('/insert_user', methods=['POST'])
+def insert_user():
+    if not request.json or 'channel_id' and 'username' not in request.json:
+        abort(400)
+
+    # Verificar se existe o canal
+    channel = [channel for channel in channels if channel['channel_id'] == int(request.json['channel_id'])]
+    # Caso n exista o canal
+    if len(channel) != 1:
+        abort(404)
+
+    user = [user for user in channel[0]['users'] if user == str(request.json['username'])]
+    # Caso n exista o utilizador
+    if len(user) != 0:
+        abort(404)
+
+    for channel in channels:
+        if channel['channel_id'] == int(request.json['channel_id']):
+            # Adiciona outro utilizador ao canal
+            channel['users'].append(str(request.json['username']))
+
+    # Escreve os a estrutura de dados num ficheiro
+    write_file('channels_data', channels)
+    return jsonify(channels), 201
 
 @app.route('/send_message/<int:channel_id>', methods=['POST'])
-@auth.login_required
 def send_message_channel(channel_id):
     if not request.json or 'message' and 'username' not in request.json:
         abort(400)
@@ -171,13 +159,17 @@ def send_message_channel(channel_id):
     channel = [ channel for channel in channels if channel['channel_id'] == int(channel_id) ]
     if len(channel) == 0:
         abort(404)
-    # TODO: alguma verificacao precisa ser feita?
+
+    user = [user for user in channel[0]['users'] if user == str(request.json['username'])]
+    # Caso exista o utilizador
+    if len(user) == 0:
+        abort(404)
+
     # Criar a nova estrutura
     message = {
             'channel': int(channel_id),
             'sms': str(request.json['message']),
             'username': str(request.json['username']),
-            'send': [],
         }
 
     # Insere a nova mensagem na estrutura de dados
@@ -185,23 +177,23 @@ def send_message_channel(channel_id):
     return jsonify(messages), 201
 
 # Apaga o utilizador caso exista do canal
-@app.route('/cancel_channel/<int:channel_id>', methods=['DELETE'])
-def cancel_channel(channel_id):
+@app.route('/remove_user/<int:channel_id>', methods=['DELETE'])
+def remove_user(channel_id):
     if not request.json or 'username' not in request.json:
         abort(400)
 
-    channel = [ channel for channel in channels if channel['channel_id'] == channel_id ]
     # Verifica se existe o canal indicado
+    channel = [ channel for channel in channels if channel['channel_id'] == channel_id ]
     if len(channel) == 0:
         abort(404)
-    for cha in channel:
-        for user in cha['users']:
-            if user == request.json['username']:
-                # Remover o utilizador
-                cha['users'].remove(user)
-                # Escrever no ficheiro os dados
-                write_channel_files('channels_data', channels)
-                return jsonify(channels), 201
+
+    for user in channel[0]['users']:
+        if user == request.json['username']:
+            # Remover o utilizador
+            channel[0]['users'].remove(user)
+            # Escrever no ficheiro os dados
+            write_file('channels_data', channels)
+            return jsonify(channels), 201
     # Caso nao exista o utilizador
     abort(404)
 

@@ -1,13 +1,18 @@
+import json
 import six
 from flask import Flask, jsonify, abort, request, make_response, url_for
 from flask_httpauth import HTTPBasicAuth
+from flask_cors import CORS
 
 app = Flask(__name__, static_url_path="")
+CORS(app)
 auth = HTTPBasicAuth()
+
+# Nota: Registar autenticacoes e registar utilizadores e assim
 
 @auth.get_password
 def get_password(username):
-    for user in login:
+    for user in users:
         if username == user['username']:
             return user['password']
     return None
@@ -35,7 +40,7 @@ def not_found(error):
 # Listar o número de mensagens na caixa de mensagens
 # Remover uma mensagem da caixa de mensagens.
 
-login = [
+users = [
     {
         'username': 'ricardo',
         'password': '18845'
@@ -52,24 +57,31 @@ messages = [
     # },
 ]
 
-
-# TODO: Gravar em ficheiros!!!
-def write_channel_files(filename, data):
+def write_file(filename, data):
     with open(filename, 'w') as file:
         file.truncate(0)
-        for f in data:
-            file.write(f'''channel: {f['channel_id']} \n''')
-            for user in f['users']:
-                file.write(f'''-> user: {user} \n''')
+        json.dump(data, file)
         file.close()
 
-def read_channel_files(filename):
-    with open(filename, 'w') as file:
-        content = file.read()
-        file.close()
-        return content
+def read_file(filename):
+    try:
+        with open(filename, 'r') as file:
+            try:
+                content = json.load(file)
+            except ValueError:
+                return []
+    except IOError as e:
+        return []
+    file.close()
+    return content
 
-# Envia uma mensagem para um utilizador ou para um grupo de utilizadores TODO: USAR UM SPLIT PARA SEPARAR POR VIRGULAS "send": "ricardo andre alex"
+# Ler os dados do ficheiro
+messages = read_file('messages.txt')
+
+# Ler os dados do ficheiro
+#users = read_file('users.txt')
+
+# Envia uma mensagem para um utilizador ou para um grupo de utilizadores
 @app.route('/send_messages',  methods=['POST'])
 def send_messages():
     if not request.json or 'message' and 'receiver' and 'username' not in request.json:
@@ -78,17 +90,22 @@ def send_messages():
     request_users = str(request.json['receiver'])
     receivers = request_users.split(',')
 
-    # Adicionar os utilizadores a quem deve enviar a mensagem   TODO: Fazer a verificao se o receiver existe na estrutura de dados login!!!
+    if len([user for user in users if user['username'] == str(request.json['username'])]) == 0:
+        abort(404)
+    # Adicionar os utilizadores a quem deve enviar a mensagem
     for receiver in receivers:
-        new_message = {
-            'id_sms': len(messages) + 1,
-            'sms': str(request.json['message']),
-            'sender': str(request.json['username']),
-            'receiver': receiver,
-            'status': 'NR',
-        }
-        # Adiciona a estrutura principal
-        messages.append(new_message)
+        if [user for user in users if user['username'] == receiver]:
+            new_message = {
+                'id_sms': len(messages) + 1,
+                'sms': str(request.json['message']),
+                'sender': str(request.json['username']),
+                'receiver': receiver,
+                'status': 'NR',
+            }
+            # Adiciona a estrutura principal
+            messages.append(new_message)
+    # Escreve em ficheiros
+    write_file('messages.txt', messages)
     return jsonify(messages), 201
 
 @app.route('/get_messages/', methods=['GET'])
@@ -117,7 +134,7 @@ def get_message(message_id):
 
     abort(404)
 
-@app.route('/remove_message/<int:message_id>', methods=['DELETE']) # TODO: ELIMINAR MENSAGENS QUE NOS ENVIAM
+@app.route('/remove_message/<int:message_id>', methods=['DELETE'])
 def delete_message(message_id):
     if not request.json or 'username' not in request.json:
         abort(400)
