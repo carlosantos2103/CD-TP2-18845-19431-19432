@@ -1,10 +1,10 @@
 import json
-import six
-from flask import Flask, jsonify, abort, request, make_response, url_for
+from flask.helpers import send_from_directory
+from flask import Flask, jsonify, abort, request, make_response, render_template
 from flask_httpauth import HTTPBasicAuth
 from flask_cors import CORS
 
-app = Flask(__name__, static_url_path="")
+app = Flask(__name__, static_url_path="", template_folder='templates')
 CORS(app)
 auth = HTTPBasicAuth()
 
@@ -30,15 +30,6 @@ def bad_request(error):
 @app.errorhandler(404)
 def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
-
-
-# Enviar uma mensagem para um utilizador - Feito
-# Consultar as mensagens entretanto recebidas na caixa de mensagens. - Feito
-# Distinguir entre as mensagens já lidas e as mensagens novas. - (+-) Feito
-# Uma mensagem enviada para um grupo é equivalente a ser enviada para cada
-# utilizador membro desse grupo.
-# Listar o número de mensagens na caixa de mensagens
-# Remover uma mensagem da caixa de mensagens.
 
 users = [
     {
@@ -75,15 +66,54 @@ def read_file(filename):
     file.close()
     return content
 
-# Ler os dados do ficheiro
+# Ler os dados dos ficheiros
 messages = read_file('messages.txt')
+users = read_file('users.txt')
 
-# Ler os dados do ficheiro
-#users = read_file('users.txt')
+# Página Principal
+@app.route('/',  methods=['GET'])
+def root():
+    return render_template("login.html")
+
+# Obtem ficheiros
+@app.route('/templates/<string:file_name>',  methods=['GET'])
+def get_file(file_name):
+    return send_from_directory("templates", file_name)
+
+# Página após o login
+@app.route('/login',  methods=['GET'])
+@auth.login_required
+def login():
+    return send_from_directory("templates", "index.html")
+
+
+
+
+# Cria novos utilizadores
+@app.route('/add_user',  methods=['POST'])
+def add_user():
+    if not request.json or 'username' and 'password' not in request.json:
+        abort(400)
+    # Verificar se ja existe esse utilizador
+    user = [user for user in users if user['username'] == str(request.json['username'])]
+    # Caso ja exista esse utilizador dar erro
+    if len(user) != 0:
+        abort(404)
+    # Cria um novo utilizador
+    new_user = {
+        'username': str(request.json['username']),
+        'password': str(request.json['password'])
+    }
+    # Adiciona a estrutura princiapl o utilizador
+    users.append(new_user)
+    # Escreve em ficheiros a estrutura de dados
+    write_file('users.txt', users)
+    return jsonify('Inserido com sucesso'), 201
 
 # Envia uma mensagem para um utilizador ou para um grupo de utilizadores
-@app.route('/send_messages',  methods=['POST'])
-def send_messages():
+@app.route('/send_message',  methods=['POST'])
+@auth.login_required
+def send_message():
     if not request.json or 'message' and 'receiver' and 'username' not in request.json:
         abort(400)
 
@@ -108,7 +138,8 @@ def send_messages():
     write_file('messages.txt', messages)
     return jsonify(messages), 201
 
-@app.route('/get_messages/', methods=['GET'])
+@app.route('/get_messages', methods=['GET'])
+@auth.login_required
 def get_messages():
     if not request.json or 'username'not in request.json:
         abort(400)
@@ -120,13 +151,14 @@ def get_messages():
             all_messages.append( { 'id_sms': message['id_sms'], 'sms': message['sms'], 'sender': message['sender'], 'status': message['status'] } )
     return jsonify(all_messages), 201
 
-@app.route('/get_messages/<int:message_id>', methods=['GET'])
+@app.route('/get_message/<int:message_id>', methods=['GET'])
+@auth.login_required
 def get_message(message_id):
     if not request.json or 'username'not in request.json:
         abort(400)
     # Verificar se existe mensagens para o utilizador
     for message in messages:
-        if message['receiver'] == str(request.json['username']) and message['status'] != 'D':
+        if message['receiver'] == str(request.json['username']) and message['status'] != 'D' and message['id_sms'] == message_id :
             # Alterar o estado para lido
             message['status'] = 'R'
             # Lista de todas as mensagens (tanto lidas como nao)
@@ -135,7 +167,8 @@ def get_message(message_id):
     abort(404)
 
 @app.route('/remove_message/<int:message_id>', methods=['DELETE'])
-def delete_message(message_id):
+@auth.login_required
+def remove_message(message_id):
     if not request.json or 'username' not in request.json:
         abort(400)
     # Verificar se existe mensagens para o utilizador
@@ -148,6 +181,7 @@ def delete_message(message_id):
             else:
                 abort(404)
     abort(404)
+
 
 if __name__ == '__main__':
     app.run(debug=True)

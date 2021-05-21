@@ -1,8 +1,7 @@
 curl -i -H "Content-Type: application/json" -X POST -d '{"message":"comi rojoes","username":"ricardo"}' http://localhost:5000/send_message/3
 
-curl -i -H "Content-Type: application/json" -X POST -d '{"name":"rita","username":"ricardo"}' http://localhost:5000/create_register
+curl -u ricardo:18845 -i -H "Content-Type: application/json" -X POST -d '{"name":"rita","username":"ricardo"}' http://localhost:5000/create_register
 
  curl -i -H "Content-Type: application/json" -X DELETE -d '{"username":"antonio"}' http://localhost:5000/cancel_channel/2
 
 curl -i -H "Content-Type: application/json" -X POST -d '{"channel_id":"2","username":"antonio"}' http://localhost:5000/insert_user
-

@@ -1,18 +1,19 @@
-import six
 import json
-from flask import Flask, jsonify, abort, request, make_response, url_for
+from flask.helpers import send_from_directory
+from flask import Flask, jsonify, abort, request, make_response, render_template
 from flask_httpauth import HTTPBasicAuth
 from flask_cors import CORS
 
-app = Flask(__name__, static_url_path="")
+
+app = Flask(__name__, static_url_path="", template_folder='templates')
 CORS(app)
 auth = HTTPBasicAuth()
 
-# TODO: Fazer o login
+# TODO: Saber como o user vai estra autenticado!!
 
 @auth.get_password
 def get_password(username):
-    for user in login:
+    for user in users:
         if username == user['username']:
             return user['password']
     return None
@@ -31,7 +32,7 @@ def bad_request(error):
 def not_found(error):
     return make_response(jsonify({'error': 'Not found'}), 404)
 
-login = [
+users = [
     {
         'username': 'ricardo',
         'password': '18845'
@@ -73,9 +74,31 @@ def read_file(filename):
     file.close()
     return content
 
+# Ler os dados dos ficheiros
+channels = read_file('channels.txt')
+
+# Página Principal
+@app.route('/',  methods=['GET'])
+def root():
+    return render_template("login.html")
+
+# Obtem ficheiros
+@app.route('/templates/<string:file_name>',  methods=['GET'])
+def get_file(file_name):
+    return send_from_directory("templates", file_name)
+
+# Página após o login
+@app.route('/login',  methods=['GET'])
+@auth.login_required
+def login():
+    return send_from_directory("templates", "index.html")
+
+
+
 # Mostra as mensagens que o canal possui
-@app.route('/see_messages/<int:channel_id>',  methods=['GET'])
-def see_messages(channel_id):
+@app.route('/get_messages/<int:channel_id>',  methods=['GET'])
+@auth.login_required
+def get_messages(channel_id):
     if not request.json or 'username' not in request.json:
         abort(400)
     channel = [channel for channel in channels if channel['channel_id'] == int(channel_id)]
@@ -108,9 +131,10 @@ def see_messages(channel_id):
                 return jsonify(messages), 201
     abort(404)
 
-# Registar num canal
-@app.route('/create_register', methods=['POST'])
-def create_register():
+# Registar um canal
+@app.route('/create_channel', methods=['POST'])
+@auth.login_required
+def create_channel():
     if not request.json or 'name' and 'username' not in request.json:
         abort(400)
     new_channel = {
@@ -121,9 +145,8 @@ def create_register():
     # Adiciona outro canal aos ja existentes
     channels.append(new_channel)
     # Escreve os a estrutura de dados num ficheiro
-    write_file('channels_data', channels)
+    write_file('channels.txt', channels)
     return jsonify(channels), 201
-
 
 # Inserir um utilizador num canal
 @app.route('/insert_user', methods=['POST'])
@@ -148,11 +171,12 @@ def insert_user():
             channel['users'].append(str(request.json['username']))
 
     # Escreve os a estrutura de dados num ficheiro
-    write_file('channels_data', channels)
+    write_file('channels.txt', channels)
     return jsonify(channels), 201
 
+# Enviar mensagem para um canal
 @app.route('/send_message/<int:channel_id>', methods=['POST'])
-def send_message_channel(channel_id):
+def send_message(channel_id):
     if not request.json or 'message' and 'username' not in request.json:
         abort(400)
     # Verifica se existe o canal
@@ -192,7 +216,7 @@ def remove_user(channel_id):
             # Remover o utilizador
             channel[0]['users'].remove(user)
             # Escrever no ficheiro os dados
-            write_file('channels_data', channels)
+            write_file('channels.txt', channels)
             return jsonify(channels), 201
     # Caso nao exista o utilizador
     abort(404)

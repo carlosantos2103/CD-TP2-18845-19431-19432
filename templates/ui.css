@@ -1,0 +1,27 @@
+input{
+    margin: 10px;
+    font-size: 15px;
+    width: 500px;
+    height: auto;
+}
+
+.login{
+    margin: auto;
+}
+
+textarea{
+    margin: 10px;
+    font-size: 15px;
+    height: auto;
+    display: block;
+}
+
+button{
+    position: relative;
+    left: 10px;
+}
+
+#message{
+    position: relative;
+    top: 15px;
+}
