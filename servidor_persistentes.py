@@ -97,7 +97,7 @@ def add_user():
     # Verificar se ja existe esse utilizador
     user = [user for user in users if user['username'] == str(request.json['username'])]
     # Caso ja exista esse utilizador dar erro
-    if len(user) != 0:
+    if len(user) != 0 and str(request.json['username']) != "" and str(request.json['password']) != "":
         abort(404)
     # Cria um novo utilizador
     new_user = {
@@ -108,7 +108,8 @@ def add_user():
     users.append(new_user)
     # Escreve em ficheiros a estrutura de dados
     write_file('users.txt', users)
-    return jsonify('Inserido com sucesso'), 201
+    #return jsonify('Inserido com sucesso'), 201
+    return send_from_directory("templates", "index.html")
 
 # Envia uma mensagem para um utilizador ou para um grupo de utilizadores
 @app.route('/send_message',  methods=['POST'])
@@ -141,7 +142,7 @@ def send_message():
 @app.route('/get_messages', methods=['GET'])
 @auth.login_required
 def get_messages():
-    if not request.json or 'username'not in request.json:
+    if not request.json or 'username' not in request.json:
         abort(400)
     all_messages = []
     # Verificar se existe mensagens para o utilizador

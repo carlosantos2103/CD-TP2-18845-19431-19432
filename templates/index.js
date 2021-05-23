@@ -11,7 +11,8 @@ function SendHTTPRequest()
     http.open(method, url);
     http.setRequestHeader("Authorization", "Basic " + btoa(username + ":" + password));
     http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-    http.send(json);
+    
+    http.send(JSON.parse(JSON.stringify(json)));
 
     http.onreadystatechange = (e) => {
         $("#message").text(http.status)
@@ -39,6 +40,24 @@ function TryLogin()
     }
 }
 
+function AddUser()
+{
+    const http = new XMLHttpRequest();
+    const url = "http://127.0.0.1:5000/add_user";
+    const method = "POST"
+    username = $("#username").val();
+    password = $("#password").val();
+    const json = {"username":username, "password":password};
+    
+    http.open(method, url);
+    http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    http.send(JSON.stringify(json));
+
+    http.onreadystatechange = (e) => {
+        if (http.readyState === 4)
+            document.write(http.response)
+    }
+}
 
 $(document).ready(function(){
     var socket = io.connect('http://127.0.0.1:5000/');
