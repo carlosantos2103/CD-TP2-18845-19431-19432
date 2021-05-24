@@ -11,11 +11,11 @@ function SendHTTPRequest()
     http.open(method, url);
     http.setRequestHeader("Authorization", "Basic " + btoa(username + ":" + password));
     http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-    
-    http.send(JSON.parse(JSON.stringify(json)));
 
+    http.send(JSON.stringify(json));
+        
     http.onreadystatechange = (e) => {
-        $("#message").text(http.status)
+        $("#message").text(http.responseText)
     }
 }
 
@@ -48,9 +48,10 @@ function AddUser()
     username = $("#username").val();
     password = $("#password").val();
     const json = {"username":username, "password":password};
-    
+
     http.open(method, url);
     http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+
     http.send(JSON.stringify(json));
 
     http.onreadystatechange = (e) => {
@@ -59,7 +60,7 @@ function AddUser()
     }
 }
 
-$(document).ready(function(){
+/*$(document).ready(function(){
     var socket = io.connect('http://127.0.0.1:5000/');
     console.log(socket)
     // Update the counter when a new user connects
@@ -68,4 +69,4 @@ $(document).ready(function(){
         userCount = document.getElementById('user_counter');
         console.log(userCount)
     });
-});
+});*/

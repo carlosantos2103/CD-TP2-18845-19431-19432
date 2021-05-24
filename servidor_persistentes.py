@@ -73,6 +73,8 @@ users = read_file('users.txt')
 # Página Principal
 @app.route('/',  methods=['GET'])
 def root():
+    if auth.current_user() != None:
+        return send_from_directory("templates", "index.html")
     return render_template("login.html")
 
 # Obtem ficheiros
@@ -94,15 +96,17 @@ def login():
 def add_user():
     if not request.json or 'username' and 'password' not in request.json:
         abort(400)
+
+    dic = json.loads(request.json)
     # Verificar se ja existe esse utilizador
-    user = [user for user in users if user['username'] == str(request.json['username'])]
+    user = [user for user in users if user['username'] == str(dic['username'])]
     # Caso ja exista esse utilizador dar erro
-    if len(user) != 0 and str(request.json['username']) != "" and str(request.json['password']) != "":
+    if len(user) != 0 and str(dic['username']) != "" and str(dic['password']) != "":
         abort(404)
     # Cria um novo utilizador
     new_user = {
-        'username': str(request.json['username']),
-        'password': str(request.json['password'])
+        'username': str(dic['username']),
+        'password': str(dic['password'])
     }
     # Adiciona a estrutura princiapl o utilizador
     users.append(new_user)
@@ -115,21 +119,24 @@ def add_user():
 @app.route('/send_message',  methods=['POST'])
 @auth.login_required
 def send_message():
-    if not request.json or 'message' and 'receiver' and 'username' not in request.json:
+    username = auth.current_user()
+    if not request.json or 'message' and 'receiver' not in request.json:
         abort(400)
 
-    request_users = str(request.json['receiver'])
+    dic = json.loads(request.json)
+
+    request_users = str(dic['receiver'])
     receivers = request_users.split(',')
 
-    if len([user for user in users if user['username'] == str(request.json['username'])]) == 0:
+    if len([user for user in users if user['username'] == username]) == 0:
         abort(404)
     # Adicionar os utilizadores a quem deve enviar a mensagem
     for receiver in receivers:
         if [user for user in users if user['username'] == receiver]:
             new_message = {
                 'id_sms': len(messages) + 1,
-                'sms': str(request.json['message']),
-                'sender': str(request.json['username']),
+                'sms': str(dic['message']),
+                'sender': username,
                 'receiver': receiver,
                 'status': 'NR',
             }
@@ -142,12 +149,12 @@ def send_message():
 @app.route('/get_messages', methods=['GET'])
 @auth.login_required
 def get_messages():
-    if not request.json or 'username' not in request.json:
-        abort(400)
+    username = auth.current_user()
+    print(username)
     all_messages = []
     # Verificar se existe mensagens para o utilizador
     for message in messages:
-        if message['receiver'] == str(request.json['username']) and message['status'] != 'D':
+        if message['receiver'] == username and message['status'] != 'D':
             # Lista de todas as mensagens (tanto lidas como nao)
             all_messages.append( { 'id_sms': message['id_sms'], 'sms': message['sms'], 'sender': message['sender'], 'status': message['status'] } )
     return jsonify(all_messages), 201
@@ -155,11 +162,10 @@ def get_messages():
 @app.route('/get_message/<int:message_id>', methods=['GET'])
 @auth.login_required
 def get_message(message_id):
-    if not request.json or 'username'not in request.json:
-        abort(400)
+    username = auth.current_user()
     # Verificar se existe mensagens para o utilizador
     for message in messages:
-        if message['receiver'] == str(request.json['username']) and message['status'] != 'D' and message['id_sms'] == message_id :
+        if message['receiver'] == username and message['status'] != 'D' and message['id_sms'] == message_id :
             # Alterar o estado para lido
             message['status'] = 'R'
             # Lista de todas as mensagens (tanto lidas como nao)
@@ -170,12 +176,11 @@ def get_message(message_id):
 @app.route('/remove_message/<int:message_id>', methods=['DELETE'])
 @auth.login_required
 def remove_message(message_id):
-    if not request.json or 'username' not in request.json:
-        abort(400)
+    username = auth.current_user()
     # Verificar se existe mensagens para o utilizador
     for message in messages:
         if message['id_sms'] == message_id:
-            if message['receiver'] == request.json['username'] and message['status'] != 'D':
+            if message['receiver'] == username and message['status'] != 'D':
                 # Remover a mensagem enviada
                 message['status'] = 'D'
                 return jsonify(messages), 201
