@@ -5,3 +5,16 @@ curl -u ricardo:18845 -i -H "Content-Type: application/json" -X POST -d '{"name"
  curl -i -H "Content-Type: application/json" -X DELETE -d '{"username":"antonio"}' http://localhost:5000/cancel_channel/2
 
 curl -i -H "Content-Type: application/json" -X POST -d '{"channel_id":"2","username":"antonio"}' http://localhost:5000/insert_user
+
+
+
+
+
+
+
+
+--------FICHEIROS
+UPLOAD
+curl -u carlos:ola -F "file=@teste.txt" http://localhost:5000/upload
+DOWNLOAD
+curl -u carlos:ola http://localhost:5000/download/teste.txt --output OLA

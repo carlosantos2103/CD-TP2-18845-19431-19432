@@ -150,7 +150,7 @@ def send_message():
 @auth.login_required
 def get_messages():
     username = auth.current_user()
-    print(username)
+
     all_messages = []
     # Verificar se existe mensagens para o utilizador
     for message in messages:
@@ -159,7 +159,7 @@ def get_messages():
             all_messages.append( { 'id_sms': message['id_sms'], 'sms': message['sms'], 'sender': message['sender'], 'status': message['status'] } )
     return jsonify(all_messages), 201
 
-@app.route('/get_message/<int:message_id>', methods=['GET'])
+@app.route('/get_messages/<int:message_id>', methods=['GET'])
 @auth.login_required
 def get_message(message_id):
     username = auth.current_user()

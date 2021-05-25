@@ -60,6 +60,29 @@ function AddUser()
     }
 }
 
+function SendHTTPRequestFile()
+{
+    const http = new XMLHttpRequest();
+    const url = "http://127.0.0.1:5000/" + $("#domain").val();
+    const method = $("#method").val();
+    const json = $("#json").val();
+
+    http.open(method, url);
+    http.setRequestHeader("Authorization", "Basic " + btoa(username + ":" + password));
+    http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+    const file = $("#file").val();
+    var formData = new FormData();
+    formData.append("file", file);
+    console.log("o ficheiro")
+    console.log(file)
+
+    http.send(formData);
+        
+    http.onreadystatechange = (e) => {
+        $("#message").text(http.responseText)
+    }
+}
+
 /*$(document).ready(function(){
     var socket = io.connect('http://127.0.0.1:5000/');
     console.log(socket)
