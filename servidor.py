@@ -51,10 +51,9 @@ def get_template_file(file_name):
 @auth.login_required
 def login():
     return render_template("index.html")
-    #return send_from_directory("templates", "index.html")
 
 #region 1 - MENSAGENS PERSISTENTES
-
+# Enviar mensagem persistente
 @app.route('/messages/send_message',  methods=['POST'])
 @auth.login_required
 def send_message():
@@ -85,6 +84,7 @@ def send_message():
     write_file('messages', messages)
     return jsonify(messages), 201
 
+# Obtem lista de mensagens
 @app.route('/messages/get_messages', methods=['GET'])
 @auth.login_required
 def get_messages():
@@ -98,6 +98,7 @@ def get_messages():
             all_messages.append( { 'id_sms': message['id_sms'], 'sms': message['sms'], 'sender': message['sender'], 'status': message['status'] } )
     return jsonify(all_messages), 201
 
+# Obtem mensagem especifica e torna-a lida
 @app.route('/messages/get_messages/<int:message_id>', methods=['GET'])
 @auth.login_required
 def get_message(message_id):
@@ -112,6 +113,7 @@ def get_message(message_id):
 
     abort(404)
 
+# Remove uma mensagem
 @app.route('/messages/remove_message/<int:message_id>', methods=['DELETE'])
 @auth.login_required
 def remove_message(message_id):
@@ -131,7 +133,7 @@ def remove_message(message_id):
 
 #region 2 - MENSAGENS INSTANTANEAS
 
-# Inserir um utilizador num canal
+# Registar num canal
 @app.route('/channels/insert_user', methods=['POST'])
 @auth.login_required
 def insert_user():
@@ -160,7 +162,7 @@ def insert_user():
     write_file('channels', channels)
     return jsonify(channels), 201
 
-# Apaga o utilizador caso exista do canal
+# Cancelar o registo do utilizador, caso exista, do canal
 @app.route('/channels/remove_user/<int:channel_id>', methods=['DELETE'])
 @auth.login_required
 def remove_channel_user(channel_id):
@@ -182,6 +184,7 @@ def remove_channel_user(channel_id):
     # Caso nao exista o utilizador
     abort(404)
 
+# Enviar mensagem por Sockets para um canal
 @socketio.on('channels/new_message')
 def new_message(data):
     username = data['username']
@@ -192,6 +195,7 @@ def new_message(data):
         channel = channel[0]['name']
         emit('newmessage', {'data': '[' + channel + '] ' + username + ': ' + message}, to=room)
 
+# Incluir cada utilizador no canal ao conectar
 @socketio.on('channels/join')
 def on_join(data):
     username = data['username']
@@ -208,6 +212,7 @@ def on_join(data):
 
 #region 3 - FICHEIROS
 
+# Carregar ficheiro
 @app.route('/files/upload',  methods=['POST'])
 @auth.login_required
 def upload():
@@ -223,6 +228,7 @@ def upload():
     f.save(os.path.join(path, secure_filename(f.filename)))
     return jsonify("File saved"), 201
 
+# Descarregar ficheiro
 @app.route('/files/download/<string:file_name>',  methods=['GET'])
 @auth.login_required
 def download(file_name):
@@ -234,6 +240,7 @@ def download(file_name):
     #return send_from_directory(path, file_name, as_attachment=True, mimetype='image/jpg')
     return send_file(path + "/" + file_name, as_attachment=True, attachment_filename='')
 
+# Apagar ficheiro
 @app.route('/files/delete/<string:file_name>',  methods=['DELETE'])
 @auth.login_required
 def delete(file_name):
@@ -246,6 +253,7 @@ def delete(file_name):
 
     return jsonify("File removed"), 200
 
+# Obtem lista de ficheiros
 @app.route('/files/list',  methods=['GET'])
 @auth.login_required
 def listfiles():
@@ -272,6 +280,7 @@ def get_password(username):
             return user['password']
     return None
 
+# Criação de conta por cliente genérico
 @app.route('/users/create_account',  methods=['POST'])
 def create_account():
     if not request.json or 'username' and 'password' not in request.json:
@@ -295,6 +304,7 @@ def create_account():
     write_file('users', users)
     return jsonify('Inserido com sucesso'), 201
 
+# Criação de conta por cliente administrador
 @app.route('/users/add',  methods=['POST'])
 @auth.login_required
 def add_user():
@@ -322,6 +332,7 @@ def add_user():
     write_file('users', users)
     return jsonify('Inserido com sucesso'), 201
 
+# Alteração de password por cliente administrador
 @app.route('/users/change_password',  methods=['PUT'])
 @auth.login_required
 def change_password():
@@ -344,6 +355,7 @@ def change_password():
     write_file('users', users)
     return jsonify('Alterado com sucesso'), 201
 
+# Remoção de conta por cliente administrador
 @app.route('/users/remove',  methods=['DELETE'])
 @auth.login_required
 def remove_user():
@@ -366,7 +378,7 @@ def remove_user():
             
     abort(404)
 
-# Registar um canal
+# Criar um canal
 @app.route('/channels/create_channel', methods=['POST'])
 @auth.login_required
 def create_channel():
