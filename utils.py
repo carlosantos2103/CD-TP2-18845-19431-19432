@@ -37,6 +37,7 @@ def read_file(filename):
     return content
 
 LIFE_TIME = 365 #days
+# returns True if exists, False otherwise checking its age
 def check_file_age(path):
     if os.path.exists(path):
         c = time.ctime(os.path.getctime(path))
@@ -50,3 +51,6 @@ def check_file_age(path):
 
         if abs(difference.days) > LIFE_TIME:
             os.remove(path)
+            return False
+        return True
+    return False

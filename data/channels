@@ -1,3 +1,1 @@
-[{"channel_id": 1, "name": "Canal 1", "users": ["luis", "carlos", "joao"]}, 
-{"channel_id": 2, "name": "Canal 2", "users": ["carlos, "ricardo"]}, 
-{"channel_id": 3, "name": "Canal 3", "users": ["joao", "ricardo"]}]
+[{"channel_id": 1, "name": "Canal 1", "users": ["ricardo", "joao"]}, {"channel_id": 2, "name": "Canal 2", "users": ["ricardo", "carlos", "luis"]}, {"channel_id": 3, "name": "Canal 3", "users": ["carlos", "joao"]}]

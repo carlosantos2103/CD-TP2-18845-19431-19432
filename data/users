@@ -1,4 +1,1 @@
-[{"username": "carlos", "password": "19432", "admin": "True"},
-{"username": "ricardo", "password": "18845", "admin": "True"},
-{"username": "joao", "password": "19431", "admin": "True"},
-{"username": "luis", "password": "0000", "admin": "False"}]
+[{"username": "carlos", "password": "19432", "admin": "True"}, {"username": "ricardo", "password": "18845", "admin": "True"}, {"username": "joao", "password": "19431", "admin": "True"}, {"username": "luis", "password": "0000", "admin": "False"}]

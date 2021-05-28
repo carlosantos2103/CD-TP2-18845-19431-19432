@@ -20,7 +20,31 @@ DOWNLOAD
 curl -u carlos:19432 http://localhost:5000/files/download/teste.txt --output ficheiro.txt
 
 
--------JSONS
-send_message
-{"message":"Boa tarde!","receiver":"ricardo,joao"}
+-------JSONS (os uris que nao estiverem aqui ou sao GET ou necessitam apenas do parametro)
+/messages/send_message
+{"message":"Bom dia!","receiver":"ricardo,joao"}
 
+/channels/insert_user
+{"channel_id":"1"}
+---ENVIAR SOCKET (MENSAGEM)
+{"username":"carlos", "message":"ola, boa tarde!", "channel_id":"1"}
+
+/files/upload
+- Ficheiro tem de ser selecionado no browser ou curl acima
+
+/users/add
+{"username":"Pedro","password":"1234","admin":"False"}
+/users/change_password
+{"username":"Pedro","password":"4321"}
+/users/remove
+{"username":"Pedro"}
+/channels/create_channel
+{"name":"Canal Provisorio"}
+
+
+
+
+
+MAL:
+
+REMOVE MESSAGE

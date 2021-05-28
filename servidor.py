@@ -133,18 +133,20 @@ def remove_message(message_id):
 
 # Inserir um utilizador num canal
 @app.route('/channels/insert_user', methods=['POST'])
+@auth.login_required
 def insert_user():
-    if not request.json or 'channel_id' and 'username' not in request.json:
+    username = auth.current_user()
+    if not request.json or 'channel_id' not in request.json:
         abort(400)
 
     dic = json.loads(request.json)
     # Verificar se existe o canal
-    channel = [channel for channel in channels if channel['channel_id'] == int(dic['channel_id'])]
+    channel = [channel for channel in channels if int(channel['channel_id']) == int(dic['channel_id'])]
     # Caso n exista o canal
     if len(channel) != 1:
         abort(404)
 
-    user = [user for user in channel[0]['users'] if user == str(dic['username'])]
+    user = [user for user in channel[0]['users'] if user == username]
     # Caso n exista o utilizador
     if len(user) != 0:
         abort(404)
@@ -152,55 +154,25 @@ def insert_user():
     for channel in channels:
         if channel['channel_id'] == int(dic['channel_id']):
             # Adiciona outro utilizador ao canal
-            channel['users'].append(str(dic['username']))
+            channel['users'].append(username)
 
     # Escreve os a estrutura de dados num ficheiro
     write_file('channels', channels)
     return jsonify(channels), 201
 
-# Enviar mensagem para um canal #SOCKETS
-@app.route('/channels/send_message/<int:channel_id>', methods=['POST'])
-def send_channel_message(channel_id):
-    username = auth.current_user()
-    if not request.json or 'message' not in request.json:
-        abort(400)
-
-    dic = json.loads(request.json)
-    # Verifica se existe o canal
-    channel = [ channel for channel in channels if channel['channel_id'] == int(channel_id) ]
-    if len(channel) == 0:
-        abort(404)
-
-    user = [user for user in channel[0]['users'] if user == username]
-    # Caso exista o utilizador
-    if len(user) == 0:
-        abort(404)
-
-    # Criar a nova estrutura
-    message = {
-            'channel': int(channel_id),
-            'sms': str(dic['message']),
-            'username': username,
-        }
-
-    # Insere a nova mensagem na estrutura de dados
-    messages.append(message)
-    return jsonify(messages), 201
-
-# Apaga o utilizador caso exista do canal #SOCKETS
+# Apaga o utilizador caso exista do canal
 @app.route('/channels/remove_user/<int:channel_id>', methods=['DELETE'])
+@auth.login_required
 def remove_channel_user(channel_id):
-    if not request.json or 'username' not in request.json:
-        abort(400)
+    username = auth.current_user()
 
-    dic = json.loads(request.json)
     # Verifica se existe o canal indicado
     channel = [ channel for channel in channels if channel['channel_id'] == channel_id ]
     if len(channel) == 0:
         abort(404)
 
     for user in channel[0]['users']:
-        if user == str(dic['username']):
+        if user == username:
             # Remover o utilizador
             channel[0]['users'].remove(user)
             #leave_room(str(channel[0]['channel_id']))
@@ -214,7 +186,7 @@ def remove_channel_user(channel_id):
 def new_message(data):
     username = data['username']
     message = data['message']
-    room = data['room']
+    room = data['channel_id']
     if username:
         channel = [channel for channel in channels if channel['channel_id'] == int(room)]
         channel = channel[0]['name']
@@ -240,7 +212,6 @@ def on_join(data):
 @auth.login_required
 def upload():
     if 'file' not in request.files:
-        print("NO FILE")
         abort(400)
 
     username = auth.current_user()
@@ -256,9 +227,8 @@ def upload():
 @auth.login_required
 def download(file_name):
     username = auth.current_user()
-    path = UPLOAD_PATH + username
-    check_file_age(path)
-    if not os.path.exists(path + "/" + file_name):
+    path = UPLOAD_PATH + username + "/" + file_name
+    if not check_file_age(path):
         abort(404)
     
     #return send_from_directory(path, file_name, as_attachment=True, mimetype='image/jpg')
@@ -269,8 +239,7 @@ def download(file_name):
 def delete(file_name):
     username = auth.current_user()
     path = UPLOAD_PATH + username + "/" + file_name
-    check_file_age(path)
-    if not os.path.exists(path):
+    if not check_file_age(path):
         abort(404)
 
     os.remove(path)
@@ -287,8 +256,7 @@ def listfiles():
 
     files = []
     for f in os.listdir(path):
-        check_file_age(path + "/" + f)
-        if os.path.isfile(os.path.join(path, f)):
+        if check_file_age(path + "/" + f):
             files.append(f)
 
     return jsonify(files), 200
