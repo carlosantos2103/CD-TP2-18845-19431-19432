@@ -1,12 +1,25 @@
 input{
     margin: 10px;
     font-size: 15px;
+    width: auto;
+    height: auto;
+    display: inline;
+}
+
+select{
+    margin: 10px;
+    font-size: 15px;
     width: 500px;
     height: auto;
 }
 
+
 .login{
     margin: auto;
+}
+
+.loginBtn{
+    display: inline;
 }
 
 textarea{
@@ -16,12 +29,24 @@ textarea{
     display: block;
 }
 
-button{
+.files{
     position: relative;
-    left: 10px;
+    display: inline;
+    left: 5px;
+    top: 10px;
+    margin: 10px;
 }
 
-#message{
+button{
     position: relative;
+    display: block;
+    left: 5px;
+    margin: 10px;
+}
+
+div{
+    position: relative;
+    margin-top: 10px;
     top: 15px;
+    background-color: rgba(138, 138, 138, 0.1);
 }

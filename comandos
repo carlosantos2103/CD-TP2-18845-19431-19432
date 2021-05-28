@@ -2,7 +2,7 @@ curl -i -H "Content-Type: application/json" -X POST -d '{"message":"comi rojoes"
 
 curl -u ricardo:18845 -i -H "Content-Type: application/json" -X POST -d '{"name":"rita","username":"ricardo"}' http://localhost:5000/create_register
 
- curl -i -H "Content-Type: application/json" -X DELETE -d '{"username":"antonio"}' http://localhost:5000/cancel_channel/2
+curl -i -H "Content-Type: application/json" -X DELETE -d '{"username":"antonio"}' http://localhost:5000/cancel_channel/2
 
 curl -i -H "Content-Type: application/json" -X POST -d '{"channel_id":"2","username":"antonio"}' http://localhost:5000/insert_user
 
@@ -15,6 +15,12 @@ curl -i -H "Content-Type: application/json" -X POST -d '{"channel_id":"2","usern
 
 --------FICHEIROS
 UPLOAD
-curl -u carlos:ola -F "file=@teste.txt" http://localhost:5000/upload
+curl -u carlos:19432 -F "file=@teste.txt" http://localhost:5000/files/upload
 DOWNLOAD
-curl -u carlos:ola http://localhost:5000/download/teste.txt --output OLA
+curl -u carlos:19432 http://localhost:5000/files/download/teste.txt --output ficheiro.txt
+
+
+-------JSONS
+send_message
+{"message":"Boa tarde!","receiver":"ricardo,joao"}
+

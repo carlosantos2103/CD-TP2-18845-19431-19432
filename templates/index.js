@@ -4,19 +4,19 @@ var password
 function SendHTTPRequest()
 {
     const http = new XMLHttpRequest();
-    const url = "http://127.0.0.1:5000/" + document.getElementById("domain").value;
+    const url = "http://127.0.0.1:5000" + document.getElementById("domain").value + document.getElementById("domain2").value;
     const method = document.getElementById("method").value;
     const json = document.getElementById("json").value
 
     http.open(method, url);
     http.setRequestHeader("Authorization", "Basic " + btoa(username + ":" + password));
     http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-    req.responseType = "document";
     http.send(JSON.stringify(json));
         
     http.onreadystatechange = (e) => {
         if (http.readyState === 4){
-            document.getElementById("message").text = http.responseText
+            document.getElementById('message').innerHTML = http.responseText
+            /*document.getElementById("message").text = http.responseText
             console.log("|" + http.responseType + "|")
             var element = document.createElement('a');
             element.setAttribute('href', 'data:attachment;charset=utf-8,' + encodeURIComponent(http.responseText));
@@ -27,16 +27,27 @@ function SendHTTPRequest()
     
             element.click();
     
-            document.body.removeChild(element);
+            document.body.removeChild(element);*/
         }
     }
+}
+
+function SendSocket()
+{
+    var socket = io();
+    const json = document.getElementById("json").value
+    socket.emit('channels/new_message', JSON.parse(json));
+    socket.on('newmessage', function(data) {
+        console.log(data['data'])
+        var div = document.getElementById('messages');
+        div.innerHTML += data['data'] + "<br>";
+    });
 }
 
 
 function TryLogin()
 {
-    socketsStart()
-
+    var socket = io();
     const http = new XMLHttpRequest();
     const url = "http://127.0.0.1:5000/login";
     const method = "GET"
@@ -51,7 +62,15 @@ function TryLogin()
 
     http.onreadystatechange = (e) => {
         if (http.readyState === 4)
+        {
             document.write(http.response)
+            socket.emit('channels/join', {username: username});
+            socket.on('newmessage', function(data) {
+                console.log(data['data'])
+                var div = document.getElementById('messages');
+                div.innerHTML += data['data'] + "<br>";
+            });
+        }
     }
 }
 
@@ -78,7 +97,7 @@ function AddUser()
 function SendHTTPRequestFile()
 {
     const http = new XMLHttpRequest();
-    const url = "http://127.0.0.1:5000/" + document.getElementById("domain").value;
+    const url = "http://127.0.0.1:5000" + document.getElementById("domain").value + document.getElementById("domain2").value;
     const method = document.getElementById("method").value;
     const json = document.getElementById("json").value
 
@@ -96,14 +115,3 @@ function SendHTTPRequestFile()
         document.getElementById("message").text = http.responseText
     }
 }
-
-function socketsStart(){
-    var socket = io();
-    console.log(socket)
-    socket.on('connect', function(data) {
-        socket.emit('event', {data:"ola"})
-    });
-    /*socket.on('new room message', function(data) {
-        console.log(data)
-    });*/
-};

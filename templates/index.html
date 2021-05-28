@@ -2,18 +2,55 @@
 <html>
     <head>
         <link href="templates/ui.css" rel="stylesheet" type="text/css"/>
+        <meta http-equiv=“Pragma” content=”no-cache”>
+        <meta http-equiv=“Expires” content=”-1″>
+        <meta http-equiv=“CACHE-CONTROL” content=”NO-CACHE”>
     </head>
     <body>
-        <script>socketsStart()</script>
         <script src="templates/index.js" type="text/javascript"></script>
-        <input type="text" id="domain" name="fname" placeholder=dominio><br>
-        <input type="text" id="method" name="fname" placeholder=metodo><br>
-        <textarea id="json" name="Text1" cols="40" rows="5" placeholder=json></textarea>
-        <button onclick="SendHTTPRequest()">ENVIAR</button>
-        <input type="file" name="file" id=file />
-        <input type = "submit" onclick="SendHTTPRequestFile()"> Enviar Ficheiro <input/>
+        <select id="domain">
+            <option value="" disabled selected>URI</option>
+            <option value="" disabled>Mensagens Persistentes</option>
+            <option value="/messages/send_message">/messages/send_message</option>
+            <option value="/messages/get_messages">/messages/get_messages</option>
+            <option value="/messages/remove_message">/messages/remove_message</option>
+            <option value="" disabled>Mensagens Instantâneas</option>
+            <option value="/channels/insert_user">/channels/insert_user</option>
+            <option value="/channels/send_message">/channels/send_message</option>
+            <option value="/channels/remove_user">/channels/remove_user</option>
+            <option value="" disabled>Transferência de Ficheiros</option>
+            <option value="/files/upload">/files/upload</option>
+            <option value="/files/download">/files/download</option>
+            <option value="/files/delete">/files/delete</option>
+            <option value="/files/list">/files/list"</option>
+            <option value="" disabled>Gestão de Utilizadores</option>
+            <option value="/users/add">/users/add</option>
+            <option value="/users/change_password">/users/change_password</option>
+            <option value="/users/remove">/users/remove</option>
+            <option value="/channels/create_channel">/channels/create_channel</option>
+        </select>
+        <input type="text" id="domain2" name="fname" placeholder="/Argumento URI"><br>
+        <select id="method">
+            <option value="" disabled selected>Método</option>
+            <option value="GET">GET</option>
+            <option value="POST">POST</option>
+            <option value="DELETE">DELETE</option>
+            <option value="PUT">PUT</option>
+        </select>
+        <textarea id="json" name="Text1" cols="40" rows="5" placeholder='JSON&#10;{"data":"content"}'></textarea>
+        <button onclick="SendHTTPRequest()">Enviar HTTPRequest</button>
+        <button onclick="SendSocket()">Enviar Socket</button>
+        <input class="files" type="file" name="file" id=file />
+        <input class="files" type = "submit" onclick="SendHTTPRequestFile()" value="Enviar Ficheiro(s)"/>
+        <br>
+        <h3>Resposta HTTP: </h3>
+        <br>
         <div id=message>
 
+        </div>
+        <br>
+        <h3>Canais: </h3>
+        <div id=messages>
         </div>
     </body>
 </html>

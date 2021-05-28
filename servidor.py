@@ -50,24 +50,8 @@ def get_template_file(file_name):
 @app.route('/login',  methods=['GET'])
 @auth.login_required
 def login():
-    username = auth.current_user()
-    for channel in channels:
-        for user in channel['users']:
-            print(user)
-            if user == username:
-                room = channel['channel_id']
-                on_join(user)
-                emit('new room message', {'data': username + ' has entered the room.'}, to=room)
-                print('Client connected to room ' + channel['name']) 
-
-    return send_from_directory("templates", "index.html")
-
-def on_join(data):
-    username = data
-    room = 1
-    join_room(room)
-    print(username)
-    emit('sss', {'data': username + ' has entered the room.'}, to=room)
+    return render_template("index.html")
+    #return send_from_directory("templates", "index.html")
 
 #region 1 - MENSAGENS PERSISTENTES
 
@@ -98,7 +82,7 @@ def send_message():
             # Adiciona a estrutura principal
             messages.append(new_message)
     # Escreve em ficheiros
-    write_file('messages.txt', messages)
+    write_file('messages', messages)
     return jsonify(messages), 201
 
 @app.route('/messages/get_messages', methods=['GET'])
@@ -147,42 +131,7 @@ def remove_message(message_id):
 
 #region 2 - MENSAGENS INSTANTANEAS
 
-# Mostra as mensagens que o canal possui
-@app.route('/channels/get_messages/<int:channel_id>',  methods=['GET'])
-@auth.login_required
-def get_channel_messages(channel_id):
-    username = auth.current_user()
-    channel = [channel for channel in channels if channel['channel_id'] == int(channel_id)]
-    # Verificar se existe o canal
-    if len(channel) == 0:
-        abort(404)
-    # Verificar se esse utilizador existe no canal
-    for cha in channel:
-        for user in cha['users']:
-            # Verifica se existe esse utilizador
-            if user == username:
-                new_messages = []
-                for message in messages:
-                    if message['username'] != username:
-                        new_message = {
-                            'sms': str(message['sms']),
-                            'username': username,
-                        }
-                        new_messages.append(new_message)
-
-                # Vai a estrutura principal e acrecenta a lista dos enviados 'send' o username a quem enviou
-                for message in messages:
-                    if message['channel'] == int(channel_id):
-                        send = [send for send in message['send'] if send == username ]
-                        # Verifica se o user ja esta inserido na estrutura de dados (para n inserir repetidos)
-                        if send == 0:
-                            # Acrescenta o user na lista
-                            message['send'].append(username)
-
-                return jsonify(messages), 201
-    abort(404)
-
-# Inserir um utilizador num canal #SOCKETS
+# Inserir um utilizador num canal
 @app.route('/channels/insert_user', methods=['POST'])
 def insert_user():
     if not request.json or 'channel_id' and 'username' not in request.json:
@@ -206,7 +155,7 @@ def insert_user():
             channel['users'].append(str(dic['username']))
 
     # Escreve os a estrutura de dados num ficheiro
-    write_file('channels.txt', channels)
+    write_file('channels', channels)
     return jsonify(channels), 201
 
 # Enviar mensagem para um canal #SOCKETS
@@ -254,11 +203,34 @@ def remove_channel_user(channel_id):
         if user == str(dic['username']):
             # Remover o utilizador
             channel[0]['users'].remove(user)
+            #leave_room(str(channel[0]['channel_id']))
             # Escrever no ficheiro os dados
-            write_file('channels.txt', channels)
+            write_file('channels', channels)
             return jsonify(channels), 201
     # Caso nao exista o utilizador
     abort(404)
+
+@socketio.on('channels/new_message')
+def new_message(data):
+    username = data['username']
+    message = data['message']
+    room = data['room']
+    if username:
+        channel = [channel for channel in channels if channel['channel_id'] == int(room)]
+        channel = channel[0]['name']
+        emit('newmessage', {'data': '[' + channel + '] ' + username + ': ' + message}, to=room)
+
+@socketio.on('channels/join')
+def on_join(data):
+    username = data['username']
+    if username:
+        for channel in channels:
+            for user in channel['users']:
+                if user == username:
+                    room = str(channel['channel_id'])
+                    join_room(room)
+                    emit('newmessage', {'data': '[' + channel['name'] + '] ' + username + ' has entered the room.'}, to=room)
+                    print('Client connected to room ' + channel['name'])
 
 #endregion
 
