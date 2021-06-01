@@ -237,7 +237,6 @@ def download(file_name):
     if not check_file_age(path):
         abort(404)
     
-    #return send_from_directory(path, file_name, as_attachment=True, mimetype='image/jpg')
     return send_file(path + "/" + file_name, as_attachment=True, attachment_filename='')
 
 # Apagar ficheiro
